@@ -1,7 +1,10 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from dotenv import load_dotenv
+from flask_cors import CORS
 import os
+import json
+from datetime import datetime
 
 def create_app():
     print("\n=== Starting Application Creation ===")
@@ -18,32 +21,68 @@ def create_app():
     
     # Initialize Flask app
     app = Flask(__name__)
-    print("✓ Flask app initialized")
+    
+    # Add CORS configuration
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "PUT", "DELETE"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
+    print("✓ CORS configured")
+
+    @app.route('/')
+    def home():
+        return jsonify({
+            "status": "running",
+            "version": "1.0",
+            "endpoints": "/api/*"
+        }), 200
+
+    # Add logging configuration
+    @app.errorhandler(500)
+    def handle_server_error(e):
+        error_details = {
+            "error": str(e),
+            "type": type(e).__name__,
+            "path": request.path,
+            "method": request.method,
+            "time": datetime.utcnow().isoformat()
+        }
+        print("❌ Server Error:", json.dumps(error_details, indent=2))
+        return jsonify({"error": "Internal Server Error", "details": error_details}), 500
+
+    @app.before_request
+    def log_request():
+        print(f"📝 Request: {request.method} {request.path}")
+
+    @app.after_request
+    def log_response(response):
+        print(f"📋 Response: {response.status}")
+        return response
     
     # Configure app
     app.config["MONGO_URI"] = mongo_uri
     app.config["JWT_SECRET_KEY"] = jwt_secret
+    app.config["MONGO_CONNECT_TIMEOUT_MS"] = 5000  # 5 seconds timeout
     print("✓ App configuration completed")
     
     # Configure MongoDB
     try:
         print("Starting MongoDB configuration...")
         
-        # יצירת מופע PyMongo
         print("Creating PyMongo instance...")
         mongo = PyMongo(app)
         print("✓ PyMongo instance created")
         
-        # בדיקה האם יש חיבור פעיל
         print("Testing MongoDB connection...")
         db = mongo.db
         print(f"✓ MongoDB database object created: {type(db)}")
         
-        # בדיקת חיבור על ידי פעולה פשוטה
         _ = db.list_collection_names()
         print("✓ Successfully retrieved collections list")
         
-        # הוספת mongo לאפליקציה
         app.mongo = mongo
         print("✓ MongoDB instance attached to app")
         
@@ -89,7 +128,7 @@ if __name__ == "__main__":
         print("\n=== Starting Server ===")
         app = create_app()
         print("✓ App created successfully")
-        app.run(debug=True)
+        app.run(debug=False)  # Remove debug mode for production
     except Exception as e:
         print(f"✕ Failed to start server: {str(e)}")
         exit(1)
