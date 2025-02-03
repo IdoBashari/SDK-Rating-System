@@ -28,9 +28,9 @@ from app.routes.user_routes import user_routes
 from app.routes.rating_routes import rating_routes
 from app.routes.comment_routes import comment_routes
 
-app.register_blueprint(user_routes, url_prefix='/api')
-app.register_blueprint(rating_routes, url_prefix='/api')
-app.register_blueprint(comment_routes, url_prefix='/api')
+app.register_blueprint(user_routes)
+app.register_blueprint(rating_routes)
+app.register_blueprint(comment_routes)
 
 @app.route('/')
 def home():
