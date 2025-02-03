@@ -32,14 +32,6 @@ def create_app():
     })
     print("✓ CORS configured")
 
-    @app.route('/')
-    def home():
-        return jsonify({
-            "status": "running",
-            "version": "1.0",
-            "endpoints": "/api/*"
-        }), 200
-
     # Add logging configuration
     @app.errorhandler(500)
     def handle_server_error(e):
